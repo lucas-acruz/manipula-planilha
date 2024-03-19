@@ -14,9 +14,11 @@ def compara_macs(mac1, mac2):
 
 
 def copia_dados(planilha1, planilha2, linha1, linha2, valores1, valores2):
-    planilha1.at[linha1, "Patrimônio no STAR"] = planilha2.at[linha2, "endpoint_name"]
-    planilha1.at[linha1, "SO do STAR"] = planilha2.at[linha2, "os_version"]
-    planilha1.at[linha1, "STAR"] = "Sim"
+    planilha1.at[linha1, valores1[0]] = "Sim"
+    valores1 = valores1[1:]
+
+    for i in range(len(valores1)):
+        planilha1.at[linha1, valores1[i]] = planilha2.at[linha2, valores2[i]]
     return planilha1
 
 
@@ -69,7 +71,8 @@ def esvazia_coluna(planilha, colunas):
     return planilha
 
 
-def percorre_valores(planilha_resultado, planilha_comparacao, coluna_mac_principal, coluna_mac_info):
+def percorre_valores(planilha_resultado, planilha_comparacao, coluna_mac_principal,
+                     coluna_mac_info, colunas_principal, colunas_info):
     for linha_principal, valor_principal in enumerate(planilha_resultado[coluna_mac_principal]):
         for linha_info, valor_info in enumerate(planilha_comparacao[coluna_mac_info]):
             if valor_principal == "nan":
@@ -79,11 +82,15 @@ def percorre_valores(planilha_resultado, planilha_comparacao, coluna_mac_princip
                 for  valor_lista in lista_macs:
                     mac = compara_macs(valor_principal, valor_lista)
                     if mac:
-                        planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao, linha_principal, linha_info)
+                        planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao,
+                                                         linha_principal, linha_info,
+                                                         colunas_principal, colunas_info)
             else:
                 mac = compara_macs(valor_principal, valor_info)
                 if mac:
-                    planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao, linha_principal, linha_info)
+                    planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao,
+                                                     linha_principal, linha_info,
+                                                     colunas_principal, colunas_info)
     return planilha_resultado
 
 
@@ -103,7 +110,7 @@ def percorre_macs():
     principal[coluna_mac_principal] = principal[coluna_mac_principal].astype(str)
     informacoes[coluna_mac_info] = informacoes[coluna_mac_info].astype(str)
 
-    return percorre_valores(principal, informacoes, coluna_mac_principal, coluna_mac_info)
+    return percorre_valores(principal, informacoes, coluna_mac_principal, coluna_mac_info, colunas_principal, colunas_info)
 
 
 def salva_planilha(planilha):
