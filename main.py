@@ -13,7 +13,7 @@ def compara_macs(mac1, mac2):
     return False
 
 
-def copia_dados(planilha1, planilha2, linha1, linha2):
+def copia_dados(planilha1, planilha2, linha1, linha2, valores1, valores2):
     planilha1.at[linha1, "Patrimônio no STAR"] = planilha2.at[linha2, "endpoint_name"]
     planilha1.at[linha1, "SO do STAR"] = planilha2.at[linha2, "os_version"]
     planilha1.at[linha1, "STAR"] = "Sim"
@@ -28,7 +28,6 @@ def verifica_mac(planilha):
     for coluna in planilha.columns:
         contem_macs = planilha[coluna].apply(lambda x: isinstance(x, str) and mac_eh_valido(x)).any()
         if contem_macs:
-            print(coluna)
             return coluna
     else:
         return "Nenhuma coluna encontrada com valores de MAC"
@@ -45,21 +44,47 @@ def armazena_planilha(pergunta="Arraste aqui o arquivo desejado: "):
 
 def separa_colunas(planilha, mensagem="Digite o numero das colunas que serão armazenadas os valores: "):
     colunas = planilha.columns
-    mostra_abas(colunas)
-    colunas = input(mensagem)
+    return mostra_abas(colunas, mensagem)
 
 
-def mostra_abas(planilha):
+def mostra_abas(planilha, mensagem="Digite o número da aba que vai ser adicionado os valores: "):
     abas = []
+    colunas = []
     for contador, aba in enumerate(planilha, start=1):
         abas.append(aba)
         print(f"{contador} - {aba}")
-    index_value = str(input("Digite o número da aba que vai ser adicionado os valores: "))
+    index_value = str(input(mensagem))
     if index_value.isdigit():
         return str(abas[int(index_value) - 1])
     else:
         numeros = re.findall(r'\d+', index_value)
-        
+        for indice in numeros:
+            colunas.append(abas[int(indice) - 1])
+        return colunas
+
+
+def esvazia_coluna(planilha, colunas):
+    for valor in colunas:
+        planilha[valor] = ""
+    return planilha
+
+
+def percorre_valores(planilha_resultado, planilha_comparacao, coluna_mac_principal, coluna_mac_info):
+    for linha_principal, valor_principal in enumerate(planilha_resultado[coluna_mac_principal]):
+        for linha_info, valor_info in enumerate(planilha_comparacao[coluna_mac_info]):
+            if valor_principal == "nan":
+                continue
+            elif (",") in valor_info:
+                lista_macs = separa_valores(str(valor_info))
+                for  valor_lista in lista_macs:
+                    mac = compara_macs(valor_principal, valor_lista)
+                    if mac:
+                        planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao, linha_principal, linha_info)
+            else:
+                mac = compara_macs(valor_principal, valor_info)
+                if mac:
+                    planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao, linha_principal, linha_info)
+    return planilha_resultado
 
 
 def percorre_macs():
@@ -69,29 +94,16 @@ def percorre_macs():
     coluna_mac_principal = verifica_mac(principal)
     coluna_mac_info = verifica_mac(informacoes)
 
-    principal["SO do STAR"] = ""
-    principal["STAR"] = ""
-    principal["Patrimônio no STAR"] = ""
+    colunas_principal = separa_colunas(planilha=principal)
+    colunas_info = separa_colunas(planilha=informacoes)
+
+    principal = esvazia_coluna(principal, colunas_principal)
+    informacoes = esvazia_coluna(informacoes, colunas_info)
 
     principal[coluna_mac_principal] = principal[coluna_mac_principal].astype(str)
     informacoes[coluna_mac_info] = informacoes[coluna_mac_info].astype(str)
 
-    for linha_principal, valor_principal in enumerate(principal[coluna_mac_principal]):
-        for linha_info, valor_info in enumerate(informacoes[coluna_mac_info]):
-            if valor_principal == "nan":
-                continue
-            elif (",") in valor_info:
-                lista_macs = separa_valores(str(valor_info))
-                for  valor_lista in lista_macs:
-                    mac = compara_macs(valor_principal, valor_lista)
-                    if mac:
-                        principal = copia_dados(principal, informacoes, linha_principal, linha_info)
-            else:
-                mac = compara_macs(valor_principal, valor_info)
-                if mac:
-                    principal = copia_dados(principal, informacoes, linha_principal, linha_info)
-    
-    return principal
+    return percorre_valores(principal, informacoes, coluna_mac_principal, coluna_mac_info)
 
 
 def salva_planilha(planilha):
