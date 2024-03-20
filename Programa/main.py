@@ -2,6 +2,7 @@ import pandas as pd
 import sys
 import re
 import keyboard
+import time
 
 
 def separa_valores(linha):
@@ -55,14 +56,20 @@ def separa_colunas(planilha, mensagem="Digite o numero das colunas que serão ar
 def mostra_abas(planilha, mensagem="Digite o número da aba que vai ser adicionado os valores: "):
     abas = [aba for aba in planilha]
     if len(abas) == 1:
+        print("Planilha adicionada com sucesso!")
+        time.sleep(3)
         return abas[0]
     for index, value in enumerate(abas, start=1): 
         print(f"{index} - {value}")
     index_value = str(input(mensagem))
     if index_value.isdigit():
+        print("Planilha adicionada com sucesso!")
+        time.sleep(3)
         return str(abas[int(index_value) - 1])
     else:
         numeros = re.findall(r'\d+', index_value)
+        print("Colunas adicionadas com sucesso!")
+        time.sleep(3)
         return [abas[int(indice) - 1] for indice in numeros]
 
 
