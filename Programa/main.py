@@ -1,6 +1,7 @@
 import pandas as pd
-import openpyxl
+import sys
 import re
+import keyboard
 
 
 def separa_valores(linha):
@@ -38,12 +39,12 @@ def verifica_mac(planilha):
     
 
 def armazena_planilha(pergunta="Arraste aqui o arquivo desejado: "):
-    caminho_principal = str(input(pergunta))
-    caminho_principal_formatado = r"{}".format(re.sub(r"^\s*&\s*'|'\s*$", "", caminho_principal))
-    xls = pd.ExcelFile(caminho_principal_formatado)
+    caminho_principal = sys.argv[1] if len(sys.argv) > 1 else input(pergunta)
+    caminho_principal = caminho_principal.strip('"')
+    xls = pd.ExcelFile(caminho_principal)
     nome_sheets = xls.sheet_names
     sheet_name = mostra_abas(nome_sheets)
-    return pd.read_excel(caminho_principal_formatado, sheet_name=sheet_name, dtype=str)
+    return pd.read_excel(caminho_principal, sheet_name=sheet_name, dtype=str)
 
 
 def separa_colunas(planilha, mensagem="Digite o numero das colunas que serão armazenadas os valores: "):
@@ -52,19 +53,17 @@ def separa_colunas(planilha, mensagem="Digite o numero das colunas que serão ar
 
 
 def mostra_abas(planilha, mensagem="Digite o número da aba que vai ser adicionado os valores: "):
-    abas = []
-    colunas = []
-    for contador, aba in enumerate(planilha, start=1):
-        abas.append(aba)
-        print(f"{contador} - {aba}")
+    abas = [aba for aba in planilha]
+    if len(abas) == 1:
+        return abas[0]
+    for index, value in enumerate(abas, start=1): 
+        print(f"{index} - {value}")
     index_value = str(input(mensagem))
     if index_value.isdigit():
         return str(abas[int(index_value) - 1])
     else:
         numeros = re.findall(r'\d+', index_value)
-        for indice in numeros:
-            colunas.append(abas[int(indice) - 1])
-        return colunas
+        return [abas[int(indice) - 1] for indice in numeros]
 
 
 def esvazia_coluna(planilha, colunas):
@@ -73,7 +72,9 @@ def esvazia_coluna(planilha, colunas):
     return planilha
 
 
-def percorre_valores(planilha_resultado, planilha_comparacao, coluna_mac_principal, coluna_mac_info, colunas_principal, colunas_info):
+def percorre_valores(planilha_resultado, planilha_comparacao,
+                    coluna_mac_principal, coluna_mac_info,
+                    colunas_principal, colunas_info):
     for linha_principal, valor_principal in enumerate(planilha_resultado[coluna_mac_principal]):
         for linha_info, valor_info in enumerate(planilha_comparacao[coluna_mac_info]):
             if valor_principal == "nan":
@@ -83,10 +84,14 @@ def percorre_valores(planilha_resultado, planilha_comparacao, coluna_mac_princip
                 for  valor_lista in lista_macs:
                     mac = compara_macs(valor_principal, valor_lista)
                     if mac:
-                        planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao, linha_principal, linha_info, colunas_principal, colunas_info)
+                        planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao,
+                                                        linha_principal, linha_info,
+                                                        colunas_principal, colunas_info)
             else:
                 if compara_macs(valor_principal, valor_info):
-                    planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao, linha_principal, linha_info, colunas_principal, colunas_info)
+                    planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao,
+                                                    linha_principal, linha_info,
+                                                    colunas_principal, colunas_info)
     return planilha_resultado
 
 
@@ -105,13 +110,17 @@ def percorre_macs():
     principal[coluna_mac_principal] = principal[coluna_mac_principal].astype(str)
     informacoes[coluna_mac_info] = informacoes[coluna_mac_info].astype(str)
 
-    return percorre_valores(principal, informacoes, coluna_mac_principal, coluna_mac_info, colunas_principal, colunas_info)
+    return percorre_valores(principal, informacoes,
+                            coluna_mac_principal, coluna_mac_info,
+                            colunas_principal, colunas_info)
 
 
 def salva_planilha(planilha):
     try:
         planilha.to_excel("Resultado.xlsx", index=False)
-        print("Planilha salva com sucesso!")
+        print("Planilha salva com sucesso! Verifique o resultado na pasta do programa.")
+        print("Pressione Enter para fechar o programa...")
+        keyboard.wait('enter')
     except Exception as e:
         print(e)
 
