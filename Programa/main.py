@@ -27,14 +27,7 @@ def copia_dados(planilha1, planilha2, linha1, linha2, valores1, valores2):
 
 
 def mac_eh_valido(mac):
-    return bool(re.match(r"^([0-9A-Fa-f]{2}[ :\-]?){5}([0-9A-Fa-f]{2})$", mac))
-
-
-def formata_mac(mac):
-    mac_hex = re.sub(r"[^0-9A-Fa-f]", "", mac)
-    mac_parts = [mac_hex[i:i+2] for i in range(0, len(mac_hex), 2)]
-    formatted_mac = ":".join(mac_parts)
-    return formatted_mac
+    return bool(re.match(r'^([0-9A-Fa-f]{2}[ :\-]?){5}([0-9A-Fa-f]{2})$', mac))
 
 
 def verifica_mac(planilha):
@@ -42,7 +35,8 @@ def verifica_mac(planilha):
         contem_macs = planilha[coluna].apply(lambda x: isinstance(x, str) and mac_eh_valido(x)).any()
         if contem_macs:
             return coluna
-    return "Nenhuma coluna encontrada com valores de MAC"
+    else:
+        return "Nenhuma coluna encontrada com valores de MAC"
     
 
 def armazena_planilha(pergunta="Arraste aqui o arquivo desejado: "):
@@ -95,16 +89,13 @@ def percorre_valores(planilha_resultado, planilha_comparacao,
             elif (",") in valor_info:
                 lista_macs = separa_valores(str(valor_info))
                 for  valor_lista in lista_macs:
-                    mac_principal_formatado = formata_mac(valor_principal)
-                    mac_lista_formatado = formata_mac(valor_lista)
-                    if mac_principal_formatado == mac_lista_formatado:
+                    mac = compara_macs(valor_principal, valor_lista)
+                    if mac:
                         planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao,
                                                         linha_principal, linha_info,
                                                         colunas_principal, colunas_info)
             else:
-                mac_principal_formatado = formata_mac(valor_principal)
-                mac_info_formatado = formata_mac(valor_info)
-                if mac_principal_formatado == mac_info_formatado:
+                if compara_macs(valor_principal, valor_info):
                     planilha_resultado = copia_dados(planilha_resultado, planilha_comparacao,
                                                     linha_principal, linha_info,
                                                     colunas_principal, colunas_info)
